@@ -15,7 +15,7 @@ import type { AppState } from "@/lib/types";
 export default function Page() {
   const [state, setState] = useState<AppState>(initialState);
   const [restored, setRestored] = useState(false);
-  const [justReset, setJustReset] = useState(false);
+  const [feedback, setFeedback] = useState<"reset" | "already" | null>(null);
 
   useEffect(() => {
     try {
@@ -47,18 +47,23 @@ export default function Page() {
     [],
   );
 
-  /**
-   * 현재 상태가 기본값 그대로인지. 기본값일 때 초기화 버튼을 눌러도 아무 변화가 없어
-   * "버튼이 고장났다"로 보이므로, 버튼을 비활성화해 되돌릴 것이 없음을 알린다.
-   */
+  /** 현재 상태가 기본값 그대로인지 — 되돌릴 것이 있는지 판단에만 쓴다. */
   const isPristine = useMemo(
     () => JSON.stringify(state) === JSON.stringify(initialState),
     [state],
   );
 
+  /**
+   * 버튼은 항상 눌리게 둔다. 비활성화하면 그것대로 "고장난 버튼"으로 읽히므로,
+   * 되돌릴 것이 없을 때는 그 사실을 응답으로 알려주는 편이 낫다.
+   */
   const reset = () => {
+    if (isPristine) {
+      setFeedback("already");
+      return;
+    }
     setState(initialState);
-    setJustReset(true);
+    setFeedback("reset");
     try {
       window.localStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -67,10 +72,10 @@ export default function Page() {
   };
 
   useEffect(() => {
-    if (!justReset) return;
-    const id = window.setTimeout(() => setJustReset(false), 1600);
+    if (!feedback) return;
+    const id = window.setTimeout(() => setFeedback(null), 1600);
     return () => window.clearTimeout(id);
-  }, [justReset]);
+  }, [feedback]);
 
   const current = computeBepRow(state, state.basePrice);
 
@@ -105,21 +110,20 @@ export default function Page() {
             <button
               type="button"
               onClick={reset}
-              disabled={isPristine && !justReset}
-              title={
-                isPristine && !justReset
-                  ? "이미 기본값입니다"
-                  : "모든 입력을 기본값으로 되돌립니다"
-              }
-              className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
-                justReset
+              title="모든 입력을 기본값으로 되돌립니다"
+              className={`whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                feedback === "reset"
                   ? "border-sky-300/60 bg-sky-300/15 text-sky-200"
-                  : isPristine
-                    ? "cursor-not-allowed border-white/10 text-slate-500"
+                  : feedback === "already"
+                    ? "border-white/25 bg-white/10 text-slate-300"
                     : "border-white/25 text-slate-200 hover:bg-white/10"
               }`}
             >
-              {justReset ? "초기화됨 ✓" : "초기화"}
+              {feedback === "reset"
+                ? "초기화됨 ✓"
+                : feedback === "already"
+                  ? "이미 기본값"
+                  : "초기화"}
             </button>
           </div>
         </div>
