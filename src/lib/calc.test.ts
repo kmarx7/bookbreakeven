@@ -10,7 +10,7 @@ import {
   normalizedWeights,
   weightedNet,
 } from "./calc";
-import { initialState } from "./defaults";
+import { emptyState, initialState } from "./defaults";
 import type { AppState } from "./types";
 
 const base: AppState = initialState;
@@ -92,8 +92,9 @@ describe("판매 비중", () => {
     expect(normalizedWeights([3, 1])).toEqual([0.75, 0.25]);
   });
 
-  it("전부 0이면 첫 플랫폼에 몰아준다", () => {
-    expect(normalizedWeights([0, 0])).toEqual([1, 0]);
+  it("전부 0이면 균등 분배한다", () => {
+    expect(normalizedWeights([0, 0])).toEqual([0.5, 0.5]);
+    expect(normalizedWeights([0, 0, 0, 0])).toEqual([0.25, 0.25, 0.25, 0.25]);
   });
 
   it("가중평균 실수령은 각 플랫폼 실수령의 비중 평균이다", () => {
@@ -168,5 +169,38 @@ describe("권장가 역산", () => {
       agency: { ...base.agency, mode: "rate", ratePercent: 40 },
     });
     expect(computeRecommendation(s).price).toBeNull();
+  });
+});
+
+describe("비우기 상태", () => {
+  it("모든 금액과 부수가 0이다", () => {
+    expect(emptyState.printUnitPrice).toBe(0);
+    expect(emptyState.copies).toBe(0);
+    expect(emptyState.basePrice).toBe(0);
+    expect(emptyState.workFees.every((f) => f.amount === 0 && !f.checked)).toBe(true);
+    expect(emptyState.platforms.every((p) => p.feePercent === 0 && p.shippingFee === 0)).toBe(true);
+  });
+
+  it("제작비와 회수 대상 비용이 0이고 NaN이 아니다", () => {
+    expect(computeProductionCost(emptyState).total).toBe(0);
+    expect(computeRecoverCost(emptyState)).toBe(0);
+  });
+
+  it("실수령·BEP·완판손익이 NaN/Infinity로 새지 않는다", () => {
+    const row = computeBepRow(emptyState, 0);
+    expect(Number.isFinite(row.net)).toBe(true);
+    expect(row.net).toBe(0);
+    expect(row.bep).toBeNull();
+    expect(Number.isFinite(row.soldOutProfit)).toBe(true);
+    expect(weightedNet(emptyState, 0)).toBe(0);
+  });
+
+  it("권장가는 산출 불가로 떨어진다", () => {
+    expect(computeRecommendation(emptyState).price).toBeNull();
+  });
+
+  it("비중이 전부 0이어도 가중치 합은 1이다", () => {
+    const w = normalizedWeights(emptyState.weights);
+    expect(w.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 10);
   });
 });

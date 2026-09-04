@@ -40,7 +40,7 @@ export default function Production({
             label="인쇄 부수"
             value={state.copies}
             display={fmtCopies(state.copies)}
-            min={100}
+            min={0}
             max={5000}
             step={100}
             onChange={(v) => patch({ copies: v })}

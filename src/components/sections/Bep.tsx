@@ -34,7 +34,7 @@ export default function Bep({
             label="목표 판매율"
             value={state.targetSellRatePercent}
             display={`${state.targetSellRatePercent}% · ${fmtCopies(rec.targetUnits)}`}
-            min={5}
+            min={0}
             max={100}
             step={5}
             onChange={(v) => patch({ targetSellRatePercent: v })}
@@ -73,7 +73,7 @@ export default function Bep({
             label="판매가"
             value={state.basePrice}
             display={won(state.basePrice)}
-            min={5000}
+            min={0}
             max={100000}
             step={1000}
             onChange={(v) => patch({ basePrice: v })}
