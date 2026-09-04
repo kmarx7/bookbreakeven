@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 출판 저자 손익분기(BEP) 계산기
 
-## Getting Started
+독립출판 저자가 **인쇄부수 · 판매가 · 판매채널**을 조정하면서 권당 실수령액과
+손익분기 판매부수(BEP)를 실시간으로 비교하는 단일 페이지 웹앱.
 
-First, run the development server:
+**배포:** https://bookbreakeven.vercel.app
+
+## 실행
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev     # http://localhost:3000
+npm test        # 계산 로직 회귀 테스트 (vitest)
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 화면 구성
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| 섹션 | 내용 |
+|---|---|
+| 1. 제작 비용 산출 | 인쇄 단가 × 부수 + 내지 디자인비 + 업무비 − 기획사 부담액 |
+| 2. 판매대행 수수료 | A. 정률 / B. 정액 / C. 월 고정 + 정률 |
+| 3. 판매 플랫폼 정산 | 플랫폼별 수수료·배송비·할인 → 권당 실수령, 판매 비중 가중평균 |
+| 4. 가격대별 BEP 분석 | 권장가 역산, 기준가 ±4,000원 9행 비교표 |
+| 5. 선택 가격 상세 분석 | 선택 단가 / 실수령 / BEP / 완판 손익 |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 계산식
 
-## Learn More
+```
+총 제작비   = 인쇄단가 × 인쇄부수 + 내지디자인비 + 체크된 업무비 − 기획사 부담액
+회수 대상   = 총 제작비 + (C 방식일 때) 월 고정비 × 판매 예상 기간
+권당 실수령 = 판매가 − 할인금액 − 플랫폼수수료(판매가 × 요율) − 차감 배송비 − 판매대행수수료
+평균 실수령 = Σ (플랫폼 실수령 × 판매 비중)
+BEP        = ⌈회수 대상 ÷ 평균 실수령⌉      (실수령 ≤ 0 이면 회수 불가)
+완판 손익   = 평균 실수령 × 인쇄부수 − 회수 대상
+권장 판매가 = 실수령이 판매가에 대해 선형(net = P·K − C)임을 이용해 역산 후 1,000원 단위 올림
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 스펙에서 확정한 두 가지 판단
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **배송비 "고객부담"의 의미** — 표시용/계산용이 모호해서 플랫폼별 3분기 선택으로 확정했다.
+   - `저자 부담` : 정산에서 배송비 차감
+   - `고객 부담` : 고객이 별도 결제, 정산에서 차감 없음
+   - `고객 부담·정산 차감` : 고객이 결제하지만 플랫폼이 실비를 정산에서 차감 (네이버 케이스)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. **월 고정비(C 방식)의 반영** — 월 고정비 카드만 두면 BEP 어디에도 반영되지 않아
+   손익분기가 낙관적으로 나온다. `판매 예상 기간(개월)` 입력을 추가해
+   `월 고정비 × 개월`을 **회수 대상 총비용**에 포함시켰다. 총 제작비 자체는 건드리지 않는다.
 
-## Deploy on Vercel
+## 상태 관리
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+전역 상태 하나(`AppState`)를 `page.tsx`가 들고 `patch()`로 갱신한다.
+4번 표의 행 클릭 / 3번 섹션의 ± 버튼 / 4번 슬라이더 / 권장가 버튼이 모두
+같은 `basePrice`를 바꾸므로 양방향 연동이 자동으로 성립한다.
+입력값은 브라우저 `localStorage`에만 저장되며 서버로 전송되지 않는다.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 계산에 포함하지 않은 것
+
+부가세, 인지세, 반품·파본 손실, 재고 보관비. 실제 정산과 차이가 날 수 있다.
+
+## 스택
+
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Vitest
