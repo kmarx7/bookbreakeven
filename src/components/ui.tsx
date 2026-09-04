@@ -18,7 +18,7 @@ export function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="scroll-mt-6" id={`section-${index}`}>
+    <section className="min-w-0 scroll-mt-6" id={`section-${index}`}>
       <header className="mb-3 flex items-baseline gap-2">
         <span aria-hidden className="text-lg">
           {emoji}
@@ -49,7 +49,7 @@ export function Card({
   } as const;
   return (
     <div
-      className={`rounded-xl border ${tones[tone]} p-4 shadow-[0_1px_2px_rgb(15_23_42/0.04)] ${className}`}
+      className={`min-w-0 rounded-xl border ${tones[tone]} p-4 shadow-[0_1px_2px_rgb(15_23_42/0.04)] ${className}`}
     >
       {children}
     </div>
