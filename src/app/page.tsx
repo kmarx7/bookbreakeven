@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Agency from "@/components/sections/Agency";
 import Bep from "@/components/sections/Bep";
 import Detail from "@/components/sections/Detail";
@@ -15,6 +15,7 @@ import type { AppState } from "@/lib/types";
 export default function Page() {
   const [state, setState] = useState<AppState>(initialState);
   const [restored, setRestored] = useState(false);
+  const [justReset, setJustReset] = useState(false);
 
   useEffect(() => {
     try {
@@ -46,14 +47,30 @@ export default function Page() {
     [],
   );
 
+  /**
+   * 현재 상태가 기본값 그대로인지. 기본값일 때 초기화 버튼을 눌러도 아무 변화가 없어
+   * "버튼이 고장났다"로 보이므로, 버튼을 비활성화해 되돌릴 것이 없음을 알린다.
+   */
+  const isPristine = useMemo(
+    () => JSON.stringify(state) === JSON.stringify(initialState),
+    [state],
+  );
+
   const reset = () => {
     setState(initialState);
+    setJustReset(true);
     try {
       window.localStorage.removeItem(STORAGE_KEY);
     } catch {
       /* noop */
     }
   };
+
+  useEffect(() => {
+    if (!justReset) return;
+    const id = window.setTimeout(() => setJustReset(false), 1600);
+    return () => window.clearTimeout(id);
+  }, [justReset]);
 
   const current = computeBepRow(state, state.basePrice);
 
@@ -88,9 +105,21 @@ export default function Page() {
             <button
               type="button"
               onClick={reset}
-              className="rounded-lg border border-white/25 px-2.5 py-1.5 text-[11px] font-medium text-slate-200 transition-colors hover:bg-white/10"
+              disabled={isPristine && !justReset}
+              title={
+                isPristine && !justReset
+                  ? "이미 기본값입니다"
+                  : "모든 입력을 기본값으로 되돌립니다"
+              }
+              className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                justReset
+                  ? "border-sky-300/60 bg-sky-300/15 text-sky-200"
+                  : isPristine
+                    ? "cursor-not-allowed border-white/10 text-slate-500"
+                    : "border-white/25 text-slate-200 hover:bg-white/10"
+              }`}
             >
-              초기화
+              {justReset ? "초기화됨 ✓" : "초기화"}
             </button>
           </div>
         </div>
