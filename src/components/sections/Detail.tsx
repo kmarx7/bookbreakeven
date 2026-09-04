@@ -8,7 +8,8 @@ import type { AppState } from "@/lib/types";
 export default function Detail({ state }: { state: AppState }) {
   const row = computeBepRow(state, state.basePrice);
   const recover = computeRecoverCost(state);
-  const sellThrough = row.bep === null ? null : (row.bep / state.copies) * 100;
+  const sellThrough =
+    row.bep === null || state.copies <= 0 ? null : (row.bep / state.copies) * 100;
 
   return (
     <div className="grid gap-4">

@@ -80,7 +80,8 @@ export function computePlatformResult(
 export function normalizedWeights(weights: number[]): number[] {
   const safe = weights.map((w) => (Number.isFinite(w) && w > 0 ? w : 0));
   const sum = safe.reduce((a, b) => a + b, 0);
-  if (sum <= 0) return safe.map((_, i) => (i === 0 ? 1 : 0));
+  // 비중이 전부 0이면(예: 비우기 직후) 첫 플랫폼에 몰아주기보다 균등 분배가 덜 오해를 부른다
+  if (sum <= 0) return safe.map(() => 1 / Math.max(1, safe.length));
   return safe.map((w) => w / sum);
 }
 

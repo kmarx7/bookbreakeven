@@ -78,7 +78,7 @@ export default function Agency({
                   label="판매 예상 기간"
                   value={agency.months}
                   display={`${agency.months}개월`}
-                  min={1}
+                  min={0}
                   max={36}
                   step={1}
                   onChange={(v) => setAgency({ months: v })}
